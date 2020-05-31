@@ -2,6 +2,7 @@ import numpy as np
 from scipy.stats import mode
 from sklearn.cluster import KMeans
 from scipy.spatial import distance
+from sklearn.neighbors import kneighbors_graph
 import matplotlib.pyplot as plt
 
 
@@ -24,6 +25,9 @@ class PowerIterationClustering:
         if affinity == 'rbf':
             A = np.exp(-distance.cdist(X, X, 'seuclidean')
                        ** 2/(2*np.var(X))).astype(np.float64)
+        elif affinity == 'n_neighbors':
+            A = kneighbors_graph(X, 10, mode='distance',
+                                 include_self=True).toarray()
         else:
             A = 1.0 - distance.cdist(X, X, metric=affinity).astype(np.float64)
         D = np.zeros(A.shape)
@@ -49,14 +53,13 @@ class PowerIterationClustering:
         W - Normalized affinity matrix
         """
         tol = 1e-5
-        epsilon = 1e-5/len(X)
+        epsilon = 1e-5/len(W)
         delta = float('inf')
         d_prev = float('inf')
         v_prev = v.copy()
         for _ in range(self.max_iter):
             aux = W@v
             v = aux / np.linalg.norm(aux, ord=2)
-            # v = u.copy()
             delta = np.linalg.norm(v-v_prev, ord=1)
             if abs(delta-d_prev) < epsilon:
                 break
