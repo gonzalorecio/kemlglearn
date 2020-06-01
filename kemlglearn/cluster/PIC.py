@@ -15,7 +15,7 @@ class PowerIterationClustering:
         self.n_clusters = n_clusters
         self.max_iter = max_iter
 
-    def fit(self, X, affinity='rbf'):
+    def fit(self, X, affinity='rbf', k_nn=10):
         """Compute Power Iteration Clustering (PIC).
         Parameters
         ----------
@@ -26,13 +26,15 @@ class PowerIterationClustering:
             A = np.exp(-distance.cdist(X, X, 'seuclidean')
                        ** 2/(2*np.var(X))).astype(np.float64)
         elif affinity == 'n_neighbors':
-            A = kneighbors_graph(X, 10, mode='distance',
+            A = kneighbors_graph(X, k_nn, mode='distance',
                                  include_self=True).toarray()
         else:
             A = 1.0 - distance.cdist(X, X, metric=affinity).astype(np.float64)
-        D = np.zeros(A.shape)
-        np.fill_diagonal(D, np.sum(A, axis=1))
-        W = np.linalg.inv(D) @ A
+        # D = np.zeros(A.shape)
+        # np.fill_diagonal(D, np.sum(A, axis=1))
+        # W = np.linalg.inv(D) @ A
+        arr = 1/np.sum(A, axis=1)
+        W = A*arr.reshape((len(arr), 1))
         v0 = np.sum(A, axis=1) / np.sum(A)
 
         # Run Power Iteration method
@@ -78,6 +80,7 @@ class PowerIterationClustering:
             plt.scatter(range(len(v)), v, c=y_true)
             plt.ylim(top=sorted(v)[-1], bottom=sorted(v)[0])
             plt.tight_layout()
+            plt.show()
 
     def fit_predict(self, X, similarity='euclidean'):
         return self.fit(X, similarity).labels_
